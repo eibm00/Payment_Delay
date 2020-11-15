@@ -6,17 +6,21 @@ if(!require(tidyverse)) install.packages("tidyverse")
 if(!require(naniar)) install.packages("naniar")
 if(!require(naniar)) install.packages("dplyr") 
 if(!require(styler)) install.packages("styler") 
+if(!require(skimr)) install.packages("skimr")
+
 library(tidyverse)
 library(naniar)
 library(dplyr)
 library(styler)
+library(skimr)
 
 ### Load the initial data ------------------------------------------------------
 
 # Put data files outside of the git folder in order to avoid pushing too large
 #   files to repository
 # path_to_data <- 'D:/..../payment_dates_final.csv'
-path_to_data <- "D:/Dokumenty/ŠKOLA/4IT439 Data-X – aplikované analytické datové modely v reálných úlohách/Semestrálka/payment_dates_final.csv"
+# path_to_data <- "D:/Dokumenty/ŠKOLA/4IT439 Data-X – aplikované analytické datové modely v reálných úlohách/Semestrálka/payment_dates_final.csv"
+path_to_data <- "..\\payment_dates_final.csv"
 data_collection <- read.csv(path_to_data)
 
 ### Data understanding ---------------------------------------------------------
@@ -58,14 +62,20 @@ data_collection <- data_collection %>%
   mutate(different_contact_area = as.factor(different_contact_area))
 data_collection <- data_collection %>%
   mutate(kc_flag = as.factor(kc_flag))
-data_collection <- data_collection %>%
-  mutate(cf_val = as.factor(cf_val))
+# this shouldn´t be factor, content of the data does not correspond to data description
+#data_collection <- data_collection %>%
+# mutate(cf_val = as.factor(cf_val))
+#data_collection <- data_collection %>%
+# mutate(cf_val = as.numeric(cf_val))
 data_collection <- data_collection %>%
   mutate(kzmz_flag = as.factor(kzmz_flag))
 data_collection <- data_collection %>%
   mutate(due_amount = as.numeric(due_amount))
 data_collection <- data_collection %>%
   mutate(payed_amount = as.numeric(payed_ammount))
+data_collection <- data_collection %>%
+  mutate(contract_status = as.factor(contract_status))
+
 
 # Remove column "payed_ammount" which was replaced by column "payed_amount"
 data_collection <- subset(data_collection, select = -payed_ammount)
@@ -73,32 +83,107 @@ data_collection <- subset(data_collection, select = -payed_ammount)
 # Display the internal structure of the data
 str(data_collection)
 
-# Check attribute value ranges
-
-
+# Summary statistics of the data
+# Check attribute value ranges, coverage, NAs occurance
+summary <- summary(data_collection)
+print(summary)
+detailed_statistics <- skim(data_collection)
+print(detailed_statistics)
 
 # Analyze attribute correlations
-
 
 # Data exploration--------------------------------------------------------------
 
 # Analyze properties of interesting attributes in detail include graphs and plots
 
-# Summary statistics of the data
-summary(data_collection)
 
 # Verify data quality ----------------------------------------------------------
 
 # Are there missing values in the data? If so, how are they represented, where
 # do they occur, and how common are they?
+variables_miss <- miss_var_summary(data_collection)
+print(variables_miss)
+# different_contract_area missing 20%, cf_val living_area kc_flag missing 19,9%
+# 1173 payment date missing, not yet paid
+gg_miss_var(data_collection)
 
+# more characteristics missing at the same time
+data_collection %>%
+  gg_miss_var(facet = total_earnings)
 
-# Check coverage
+# what with NAs in payment order
+# to do payment order id!!
 
 # Check for plausibility of values
+for (i in c(1:ncol)){
+  if(is.factor(data_collection[,i])){
+    print(colnames(data_collection[i]))
+    print(prop.table(table(data_collection[,i])))
+    cat(sep="\n\n")
+  }
+}
+
+# Check interesting coverage
+# most products are type 1
+ggplot(data = data_collection, aes(x = product_type)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$product_type)
+
+# most payment orders have discount
+ggplot(data = data_collection, aes(x = business_discount)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$business_discount)
+
+# contract status mostly 1, then 5,6,8,7 some 2,3,4...What does it mean??
+ggplot(data = data_collection, aes(x = contract_status)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$contract_status)
+
+# marital status mostly 3, some 4,2,6 5 and 1 mostly not...What does it mean?
+ggplot(data = data_collection, aes(x = marital_status)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$marital_status)
+
+# mostly 0 children, drops with number 
+prop.table(table(data_collection$number_of_children))
+
+#  mostly 1 other product, drops with number
+prop.table(table(data_collection$number_other_product))
+
+# almost no email contact
+ggplot(data = data_collection, aes(x = client_email)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$client_email)
+
+# total earning level mostly not declared  
+ggplot(data = data_collection, aes(x = total_earnings)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$total_earnings)
+
+# mostly not different contact area
+ggplot(data = data_collection, aes(x = different_contact_area)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$different_contact_area)
+
+# mostly false KC flag - mostly owns local citizenship
+ggplot(data = data_collection, aes(x = kc_flag)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$kc_flag)
 
 
-
+# mostly false KZMZ flag  mostly did not fill employer
+ggplot(data = data_collection, aes(x = kzmz_flag)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$kzmz_flag)
 
 
 
@@ -122,8 +207,7 @@ DTest <- data[-index_train, ]
 summary(DTrain)
 summary(DTest)
 # Detailed summary of data
-install.packages("skimr")
-library(skimr)
+
 Dtrainskim <- skim(DTrain)
 Dtestskrim <- skim(DTest)
 ## see all NAs for all dataset
