@@ -1,15 +1,16 @@
 
 ### Dependencies ---------------------------------------------------------------
-rm(list = ls()) #clear
+rm(list = ls()) # clear
 
-if(!require(tidyverse)) install.packages("tidyverse") 
-if(!require(naniar)) install.packages("naniar")
-if(!require(naniar)) install.packages("dplyr") 
-if(!require(styler)) install.packages("styler") 
+if (!require(tidyverse)) install.packages("tidyverse")
+if (!require(naniar)) install.packages("naniar")
+if (!require(styler)) install.packages("styler")
+if (!require(GGally)) install.packages("GGally")
+
 library(tidyverse)
 library(naniar)
-library(dplyr)
 library(styler)
+library(GGally)
 
 ### Load the initial data ------------------------------------------------------
 
@@ -35,6 +36,8 @@ data_collection <- data_collection %>%
 data_collection <- data_collection %>%
   mutate(product_type = as.factor(product_type))
 data_collection <- data_collection %>%
+  mutate(contract_status = as.factor(contract_status))
+data_collection <- data_collection %>%
   mutate(business_discount = as.factor(business_discount))
 data_collection <- data_collection %>%
   mutate(gender = as.factor(gender))
@@ -58,8 +61,9 @@ data_collection <- data_collection %>%
   mutate(different_contact_area = as.factor(different_contact_area))
 data_collection <- data_collection %>%
   mutate(kc_flag = as.factor(kc_flag))
+# Problem! cf_val appears to not be a factor, despite the description file !!!
 data_collection <- data_collection %>%
-  mutate(cf_val = as.factor(cf_val))
+  mutate(cf_val = as.numeric(cf_val))
 data_collection <- data_collection %>%
   mutate(kzmz_flag = as.factor(kzmz_flag))
 data_collection <- data_collection %>%
@@ -67,17 +71,97 @@ data_collection <- data_collection %>%
 data_collection <- data_collection %>%
   mutate(payed_amount = as.numeric(payed_ammount))
 
-# Remove column "payed_ammount" which was replaced by column "payed_amount"
+# Remove feature "payed_ammount" which was replaced by feature "payed_amount"
 data_collection <- subset(data_collection, select = -payed_ammount)
+
+# Create a feature for delay in days
+data_collection$delay <- difftime(data_collection$payment_date,
+  data_collection$due_date, tz,
+  units = "days"
+)
+data_collection <- data_collection %>%
+  mutate(delay = as.numeric(delay))
 
 # Display the internal structure of the data
 str(data_collection)
 
-# Check attribute value ranges
+# Check feature value ranges
 
 
+# Analyze correlations among numerical features
+numerical_rel <- matrix(nrow = choose(ncol(data_collection), 2), ncol = 2)
+iteration <- 0
+for (i in c(1:(ncol(data_collection) - 1))) {
+  if (is.numeric(data_collection[, i])) {
+    for (j in c((i + 1):ncol(data_collection))) {
+      iteration <- iteration + 1
+      if (is.numeric(data_collection[, j])) {
+        correlation <- cor.test(data_collection[, i], data_collection[, j])
+        if (correlation$p.value <= 0.05) {
+          numerical_rel[iteration, ] <- c(i, j)
+        }
+      }
+    }
+  }
+}
 
-# Analyze attribute correlations
+numerical_rel <- as.data.frame(numerical_rel)
+
+pairs(numerical_rel[,], na.action = na.omit, pch = 20, lower.panel = NULL)
+
+feature_cor <- cor(data_collection[, c(10, 11, 16, 23:25)])
+ggpairs(data_collection, columns = c(10, 11, 16, 23:25), title = "Attribute correlations")
+
+# Examine relationship between categorical features using chi-squared test with
+#   the significance level 0.05
+# Overestimating the matrix size saves time compared to building the matrix one
+#  row at a time:
+categorical_rel <- matrix(nrow = choose(ncol(data_collection), 2), ncol = 2)
+iteration <- 0
+for (i in c(1:(ncol(data_collection) - 1))) {
+  if (is.factor(data_collection[, i])) {
+    for (j in c((i + 1):ncol(data_collection))) {
+      iteration <- iteration + 1
+      if (is.factor(data_collection[, j])) {
+        contingency_table <- table(data_collection[, i], data_collection[, j])
+        chisq <- (chisq.test(contingency_table, correct = FALSE))
+        if (chisq$p.value <= 0.05) {
+          categorical_rel[iteration, ] <- c(i, j)
+        }
+      }
+    }
+  }
+}
+
+categorical_rel <- as.data.frame(categorical_rel)
+
+
+plot(data_collection$payment_order, data_collection$delay)
+abline(lm(data_collection$delay ~ data_collection$payment_order))
+
+data_collection %>%
+  group_by(product_type) %>%
+  summarize(
+    n_records = n(), n_contracts = n_distinct(contract_id),
+    mean_payed_amount = mean(payed_amount), min_birth_year = min(birth_year)
+  )
+
+ggplot(data_collection, aes(x = product_type, y = payed_amount)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(
+    title = "Boxplot of paid amount by product type",
+    x = "Product type", y = "Paid Amount"
+  )
+
+ggplot(data_collection, aes(x = payed_amount)) +
+  geom_histogram(fill = "limegreen", alpha = 0.5) +
+  theme_minimal() +
+  labs(
+    title = "Histogram of paid amount",
+    x = "Paid amount", y = "Count"
+  )
+
 
 
 # Data exploration--------------------------------------------------------------
@@ -87,62 +171,43 @@ str(data_collection)
 # Summary statistics of the data
 summary(data_collection)
 
-# Verify data quality ----------------------------------------------------------
-
-# Are there missing values in the data? If so, how are they represented, where
-# do they occur, and how common are they?
-
-
-# Check coverage
-
-# Check for plausibility of values
-
-
-
-
-
-
-
-
-
-
-
-
-
 ####### Generate test and train data ########
 # fix random generator
 set.seed(2020)
 n_train <- round(0.08 * nrow)
 index_train <- sample(1:nrow, n_train)
 
-DTrain <- data[index_train, ]
-DTest <- data[-index_train, ]
+DTrain <- data_collection[index_train, ]
+DTest <- data_collection[-index_train, ]
 
-# summary to find if data have NAs
+# Summary to find if data have NAs
 summary(DTrain)
 summary(DTest)
+
 # Detailed summary of data
 install.packages("skimr")
 library(skimr)
+
 Dtrainskim <- skim(DTrain)
 Dtestskrim <- skim(DTest)
-## see all NAs for all dataset
+
+## See all NAs for all dataset
 skim(DTrain)
 skim(DTest)
 
-## create a new data set without NAs
+## Create a new data set without NAs
 DTrain_new <- na.omit(DTrain)
 DTest_new <- na.omit(DTest)
-# number of column and row and summary in data train w-o NAs
+
+# Number of column and row and summary in data train w-o NAs
 dim(DTrain_new) # number of columns and rows for clean data Train
 summary(DTrain_new)
 
-# number of column and row and summary in data test w-o NAs
+# Number of column and row and summary in data test w-o NAs
 dim(DTest_new) # number of columns and rows for clean data Test
 summary(DTest_new)
 
-
-## summary for each attribute
+## Summary for each attribute
 headofTable <- c(
   "Num. of Children", "Num. Other Product", "Year of Birth",
   "Due amount", "payed amount", "delay"
@@ -202,7 +267,7 @@ summaryDTrain <- distinct(data.frame(headofTable, EX, VarX, Median, Q1, Q3, Min,
 ############## exploring Data ########################
 
 #### Train data statistic ####
-# statistic addiction delay on gender
+# Statistic addiction delay on gender
 meanG_D <- DTrain_new %>%
   group_by(gender) %>%
   summarise(mean = mean(delay))
@@ -232,7 +297,7 @@ data_GD <- data.frame(meanG_D, medG_D[, 2], minG_D[, 2], maxG_D[, 2],
   check.names = FALSE
 )
 
-# statistic addiction payed amount to gender
+# Statistic addiction payed amount to gender
 meanG_PA <- DTrain_new %>%
   group_by(gender) %>%
   summarise(mean = mean(payed_amount))
@@ -261,8 +326,9 @@ data_GPA <- data.frame(meanG_PA, medG_PA[, 2], minG_PA[, 2], maxG_PA[, 2],
   Q1G_PA[, 2], Q3G_PA[, 2],
   check.names = FALSE
 )
-##### test data statictic #####
-## statistic addiction delay on gender
+
+##### Test data statistic #####
+## Statistic addiction delay on gender
 TmeanG_D <- DTest_new %>%
   group_by(gender) %>%
   summarise(mean = mean(delay))
@@ -292,7 +358,7 @@ Tdata_GD <- data.frame(TmeanG_D, TmedG_D[, 2], TminG_D[, 2], TmaxG_D[, 2],
   check.names = FALSE
 )
 
-# statistic addiction payed amount to gender
+# Statistic addiction payed amount to gender
 TmeanG_PA <- DTest_new %>%
   group_by(gender) %>%
   summarise(mean = mean(payed_amount))
@@ -322,7 +388,7 @@ Tdata_GPA <- data.frame(TmeanG_PA, TmedG_PA[, 2], TminG_PA[, 2], TmaxG_PA[, 2],
   check.names = FALSE
 )
 
-# addiction payed amount to gender, product type and business discount
+# Addiction payed amount to gender, product type and business discount
 DTest_new %>%
   group_by(gender, product_type, business_discount) %>%
   summarise(payedAmount = mean(payed_amount)) %>%
@@ -333,14 +399,31 @@ DTest_new %>%
   summarise(delay = mean(delay)) %>%
   spread(gender, delay)
 
+# Verify data quality ----------------------------------------------------------
+
+# Are there missing values in the data? If so, how are they represented, where
+# do they occur, and how common are they?
+
+
+# Check coverage
+
+# Check for plausibility of values
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Data preparation -------------------------------------------------------------
 # Clean the data - estimation of missing data
 
 # Create derived attributes
-# Add a column for delay in days
-data_collection$delay <- difftime(data_collection$payment_date,
-  data_collection$due_date, tz,
-  units = "days"
-)
-data_collection <- data_collection %>%
-  mutate(delay = as.numeric(delay))
