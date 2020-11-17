@@ -6,23 +6,30 @@ if (!require(tidyverse)) install.packages("tidyverse")
 if (!require(naniar)) install.packages("naniar")
 if (!require(styler)) install.packages("styler")
 if (!require(GGally)) install.packages("GGally")
+if(!require(skimr)) install.packages("skimr")
 
 library(tidyverse)
 library(naniar)
 library(styler)
 library(GGally)
+library(skimr)
 
 ### Load the initial data ------------------------------------------------------
 
 # Put data files outside of the git folder in order to avoid pushing too large
-#   files to repository
+# files to repository
 # path_to_data <- 'D:/..../payment_dates_final.csv'
-path_to_data <- "D:/Dokumenty/ŠKOLA/4IT439 Data-X – aplikované analytické datové modely v reálných úlohách/Semestrálka/payment_dates_final.csv"
+# path_to_data <- "D:/Dokumenty/ŠKOLA/4IT439 Data-X – aplikované analytické datové modely v reálných úlohách/Semestrálka/payment_dates_final.csv"
+path_to_data <- "..\\payment_dates_final.csv"
+
 data_collection <- read.csv(path_to_data)
 
 ### Data understanding ---------------------------------------------------------
 
 # Data description -------------------------------------------------------------
+
+# Display the internal structure of the data
+str(data_collection)
 
 # Data volume (number of rows and columns)
 nrow <- nrow(data_collection)
@@ -84,8 +91,6 @@ data_collection <- data_collection %>%
 
 # Display the internal structure of the data
 str(data_collection)
-
-# Check feature value ranges
 
 
 # Analyze correlations among numerical features
@@ -169,7 +174,110 @@ ggplot(data_collection, aes(x = payed_amount)) +
 # Analyze properties of interesting attributes in detail include graphs and plots
 
 # Summary statistics of the data
-summary(data_collection)
+# Check attribute value ranges, coverage, NAs occurence
+summary <- summary(data_collection)
+print(summary)
+detailed_statistics <- skim(data_collection)
+print(detailed_statistics)
+
+# Verify data quality ----------------------------------------------------------
+
+# Are there missing values in the data? If so, how are they represented, where
+# do they occur, and how common are they?
+
+variables_miss <- miss_var_summary(data_collection)
+print(variables_miss)
+# different_contract_area missing 20%, cf_val living_area kc_flag missing 19,9%
+# 1173 payment date missing, not yet paid
+gg_miss_var(data_collection)
+
+# more characteristics missing at the same time
+data_collection %>%
+  gg_miss_var(facet = total_earnings)
+
+# what with NAs in payment order
+# to do payment order id!!
+
+
+
+# Check for plausibility of values
+# Check for plausibility of values
+for (i in c(1:ncol)){
+  if(is.factor(data_collection[,i])){
+    print(colnames(data_collection[i]))
+    print(prop.table(table(data_collection[,i])))
+    cat(sep="\n\n")
+  }
+}
+
+# Check interesting coverage
+# most products are type 1
+ggplot(data = data_collection, aes(x = product_type)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$product_type)
+
+# most payment orders have discount
+ggplot(data = data_collection, aes(x = business_discount)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$business_discount)
+
+# contract status mostly 1, then 5,6,8,7 some 2,3,4...What does it mean??
+ggplot(data = data_collection, aes(x = contract_status)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$contract_status)
+
+# marital status mostly 3, some 4,2,6 5 and 1 mostly not...What does it mean?
+ggplot(data = data_collection, aes(x = marital_status)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$marital_status)
+
+# mostly 0 children, drops with number 
+prop.table(table(data_collection$number_of_children))
+
+#  mostly 1 other product, drops with number
+prop.table(table(data_collection$number_other_product))
+
+# almost no email contact
+ggplot(data = data_collection, aes(x = client_email)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$client_email)
+
+# total earning level mostly not declared  
+ggplot(data = data_collection, aes(x = total_earnings)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$total_earnings)
+
+# mostly not different contact area
+ggplot(data = data_collection, aes(x = different_contact_area)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$different_contact_area)
+
+# mostly false KC flag - mostly owns local citizenship
+ggplot(data = data_collection, aes(x = kc_flag)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$kc_flag)
+
+
+# mostly false KZMZ flag  mostly did not fill employer
+ggplot(data = data_collection, aes(x = kzmz_flag)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+table(data_collection$kzmz_flag)
+
+
+
+
+
+
+
 
 ####### Generate test and train data ########
 # fix random generator
@@ -398,17 +506,6 @@ DTest_new %>%
   group_by(gender, number_of_children) %>%
   summarise(delay = mean(delay)) %>%
   spread(gender, delay)
-
-# Verify data quality ----------------------------------------------------------
-
-# Are there missing values in the data? If so, how are they represented, where
-# do they occur, and how common are they?
-
-
-# Check coverage
-
-# Check for plausibility of values
-
 
 
 
