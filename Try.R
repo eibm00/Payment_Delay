@@ -19,8 +19,8 @@ library(skimr)
 # Put data files outside of the git folder in order to avoid pushing too large
 # files to repository
 # path_to_data <- 'D:/..../payment_dates_final.csv'
-# path_to_data <- "D:/Dokumenty/ŠKOLA/4IT439 Data-X – aplikované analytické datové modely v reálných úlohách/Semestrálka/payment_dates_final.csv"
-path_to_data <- "..\\payment_dates_final.csv"
+path_to_data <- "D:/01 Skola VSE Statistika/DataX/zaverecny projekt/payment_dates_final.csv"
+#path_to_data <- "..\\payment_dates_final.csv"
 
 data_collection <- read.csv(path_to_data)
 
@@ -300,8 +300,6 @@ table(data_collection$kzmz_flag)
 
 
 
-
-
 ####### Generate test and train data ########
 # fix random generator
 set.seed(2020)
@@ -330,6 +328,8 @@ skim(DTest)
 DTrain_new <- na.omit(DTrain)
 DTest_new <- na.omit(DTest)
 
+
+
 # Number of column and row and summary in data train w-o NAs
 dim(DTrain_new) # number of columns and rows for clean data Train
 summary(DTrain_new)
@@ -338,88 +338,90 @@ summary(DTrain_new)
 dim(DTest_new) # number of columns and rows for clean data Test
 summary(DTest_new)
 
+# delete NAs in whole data source
+data_collection <- na.omit(data_collection)
 ## Summary for each attribute
 headofTable <- c(
   "Num. of Children", "Num. Other Product", "Year of Birth",
   "Due amount", "payed amount", "delay"
 )
 EX <- c(
-  mean(DTrain_new$number_of_children),
-  mean(DTrain_new$number_other_product), mean(DTrain_new$birth_year),
-  mean(DTrain_new$due_amount), mean(DTrain_new$payed_amount),
-  mean(DTrain_new$delay)
+  mean(data_collection$number_of_children),
+  mean(data_collection$number_other_product), mean(data_collection$birth_year),
+  mean(data_collection$due_amount), mean(data_collection$payed_amount),
+  mean(data_collection$delay)
 )
 VarX <- c(
-  var(DTrain_new$number_of_children),
-  var(DTrain_new$number_other_product), var(DTrain_new$birth_year),
-  var(DTrain_new$due_amount), var(DTrain_new$payed_amount),
-  var(DTrain_new$delay)
+  var(data_collection$number_of_children),
+  var(data_collection$number_other_product), var(data_collection$birth_year),
+  var(data_collection$due_amount), var(data_collection$payed_amount),
+  var(data_collection$delay)
 )
 Median <- c(
-  median(DTrain_new$number_of_children),
-  median(DTrain_new$number_other_product),
-  median(DTrain_new$birth_year), median(DTrain_new$due_amount),
-  median(DTrain_new$payed_amount), median(DTrain_new$delay)
+  median(data_collection$number_of_children),
+  median(data_collection$number_other_product),
+  median(data_collection$birth_year), median(data_collection$due_amount),
+  median(data_collection$payed_amount), median(data_collection$delay)
 )
 Q1 <- c(
-  quantile(DTrain_new$number_of_children, probs = 1 / 4),
-  quantile(DTrain_new$number_other_product, probs = 1 / 4),
-  quantile(DTrain_new$birth_year, probs = 1 / 4),
-  quantile(DTrain_new$due_amount, probs = 1 / 4),
-  quantile(DTrain_new$payed_amount, probs = 1 / 4),
-  quantile(DTrain_new$delay, probs = 1 / 4)
+  quantile(data_collection$number_of_children, probs = 1 / 4),
+  quantile(data_collection$number_other_product, probs = 1 / 4),
+  quantile(data_collection$birth_year, probs = 1 / 4),
+  quantile(data_collection$due_amount, probs = 1 / 4),
+  quantile(data_collection$payed_amount, probs = 1 / 4),
+  quantile(data_collection$delay, probs = 1 / 4)
 )
 Q3 <- c(
-  quantile(DTrain_new$number_of_children, probs = c(3 / 4)),
-  quantile(DTrain_new$number_other_product, probs = c(3 / 4)),
-  quantile(DTrain_new$birth_year, probs = c(3 / 4)),
-  quantile(DTrain_new$due_amount, probs = c(3 / 4)),
-  quantile(DTrain_new$payed_amount, probs = c(3 / 4)),
-  quantile(DTrain_new$delay, probs = 3 / 4)
+  quantile(data_collection$number_of_children, probs = c(3 / 4)),
+  quantile(data_collection$number_other_product, probs = c(3 / 4)),
+  quantile(data_collection$birth_year, probs = c(3 / 4)),
+  quantile(data_collection$due_amount, probs = c(3 / 4)),
+  quantile(data_collection$payed_amount, probs = c(3 / 4)),
+  quantile(data_collection$delay, probs = 3 / 4)
 )
 Min <- c(
-  min(DTrain_new$number_of_children),
-  min(DTrain_new$number_other_product),
-  min(DTrain_new$birth_year), min(DTrain_new$due_amount),
-  min(DTrain_new$payed_amount), min(DTrain_new$delay)
+  min(data_collection$number_of_children),
+  min(data_collection$number_other_product),
+  min(data_collection$birth_year), min(data_collection$due_amount),
+  min(data_collection$payed_amount), min(data_collection$delay)
 )
 Max <- c(
-  max(DTrain_new$number_of_children),
-  max(DTrain_new$number_other_product), max(DTrain_new$birth_year),
-  max(DTrain_new$due_amount), max(DTrain_new$payed_amount),
-  max(DTrain_new$delay)
+  max(data_collection$number_of_children),
+  max(data_collection$number_other_product), max(data_collection$birth_year),
+  max(data_collection$due_amount), max(data_collection$payed_amount),
+  max(data_collection$delay)
 )
 
-summaryDTrain <- distinct(data.frame(headofTable, EX, VarX, Median, Q1, Q3, Min,
+summaryData <- distinct(data.frame(headofTable, EX, VarX, Median, Q1, Q3, Min,
   Max,
   check.rows = FALSE, check.names = FALSE
 ))
 
 ############## exploring Data ########################
 
-#### Train data statistic ####
+#### Data statistic ####
 # Statistic addiction delay on gender
-meanG_D <- DTrain_new %>%
+meanG_D <- data_collection %>%
   group_by(gender) %>%
   summarise(mean = mean(delay))
 
-medG_D <- DTrain_new %>%
+medG_D <- data_collection %>%
   group_by(gender) %>%
   summarise(med = median(delay))
 
-maxG_D <- DTrain_new %>%
+maxG_D <- data_collection %>%
   group_by(gender) %>%
   summarise(max = max(delay))
 
-minG_D <- DTrain_new %>%
+minG_D <- data_collection %>%
   group_by(gender) %>%
   summarise(min = min(delay))
 
-Q1G_D <- DTrain_new %>%
+Q1G_D <- data_collection %>%
   group_by(gender) %>%
   summarise(Q1 = quantile(delay, probs = 1 / 4))
 
-Q3G_D <- DTrain_new %>%
+Q3G_D <- data_collection %>%
   group_by(gender) %>%
   summarise(Q3 = quantile(delay, probs = 3 / 4))
 
@@ -429,27 +431,27 @@ data_GD <- data.frame(meanG_D, medG_D[, 2], minG_D[, 2], maxG_D[, 2],
 )
 
 # Statistic addiction payed amount to gender
-meanG_PA <- DTrain_new %>%
+meanG_PA <- data_collection %>%
   group_by(gender) %>%
   summarise(mean = mean(payed_amount))
 
-medG_PA <- DTrain_new %>%
+medG_PA <- data_collection %>%
   group_by(gender) %>%
   summarise(med = median(payed_amount))
 
-maxG_PA <- DTrain_new %>%
+maxG_PA <- data_collection %>%
   group_by(gender) %>%
   summarise(max = max(payed_amount))
 
-minG_PA <- DTrain_new %>%
+minG_PA <- data_collection %>%
   group_by(gender) %>%
   summarise(min = min(payed_amount))
 
-Q1G_PA <- DTrain_new %>%
+Q1G_PA <- data_collection %>%
   group_by(gender) %>%
   summarise(Q1 = quantile(payed_amount, probs = 1 / 4))
 
-Q3G_PA <- DTrain_new %>%
+Q3G_PA <- data_collection %>%
   group_by(gender) %>%
   summarise(Q3 = quantile(payed_amount, probs = 3 / 4))
 
@@ -458,74 +460,42 @@ data_GPA <- data.frame(meanG_PA, medG_PA[, 2], minG_PA[, 2], maxG_PA[, 2],
   check.names = FALSE
 )
 
-##### Test data statistic #####
-## Statistic addiction delay on gender
-TmeanG_D <- DTest_new %>%
+# Statistic addiction due amount to gender
+meanG_DA <- data_collection %>%
   group_by(gender) %>%
-  summarise(mean = mean(delay))
+  summarise(mean = mean(due_amount))
 
-TmedG_D <- DTest_new %>%
+medG_DA <- data_collection %>%
   group_by(gender) %>%
-  summarise(med = median(delay))
+  summarise(med = median(due_amount))
 
-TmaxG_D <- DTest_new %>%
+maxG_DA <- data_collection %>%
   group_by(gender) %>%
-  summarise(max = max(delay))
+  summarise(max = max(due_amount))
 
-TminG_D <- DTest_new %>%
+minG_DA <- data_collection %>%
   group_by(gender) %>%
-  summarise(min = min(delay))
+  summarise(min = min(due_amount))
 
-TQ1G_D <- DTest_new %>%
+Q1G_DA <- data_collection %>%
   group_by(gender) %>%
-  summarise(Q1 = quantile(delay, probs = 1 / 4))
+  summarise(Q1 = quantile(due_amount, probs = 1 / 4))
 
-TQ3G_D <- DTest_new %>%
+Q3G_DA <- data_collection %>%
   group_by(gender) %>%
-  summarise(Q3 = quantile(delay, probs = 3 / 4))
+  summarise(Q3 = quantile(due_amount, probs = 3 / 4))
 
-Tdata_GD <- data.frame(TmeanG_D, TmedG_D[, 2], TminG_D[, 2], TmaxG_D[, 2],
-  TQ1G_D[, 2], TQ3G_D[, 2],
-  check.names = FALSE
+data_GDA <- data.frame(meanG_DA, medG_DA[, 2], minG_DA[, 2], maxG_DA[, 2],
+                       Q1G_DA[, 2], Q3G_DA[, 2],
+                       check.names = FALSE
 )
-
-# Statistic addiction payed amount to gender
-TmeanG_PA <- DTest_new %>%
-  group_by(gender) %>%
-  summarise(mean = mean(payed_amount))
-
-TmedG_PA <- DTest_new %>%
-  group_by(gender) %>%
-  summarise(med = median(payed_amount))
-
-TmaxG_PA <- DTest_new %>%
-  group_by(gender) %>%
-  summarise(max = max(payed_amount))
-
-TminG_PA <- DTest_new %>%
-  group_by(gender) %>%
-  summarise(min = min(payed_amount))
-
-TQ1G_PA <- DTest_new %>%
-  group_by(gender) %>%
-  summarise(Q1 = quantile(payed_amount, probs = 1 / 4))
-
-TQ3G_PA <- DTest_new %>%
-  group_by(gender) %>%
-  summarise(Q3 = quantile(payed_amount, probs = 3 / 4))
-
-Tdata_GPA <- data.frame(TmeanG_PA, TmedG_PA[, 2], TminG_PA[, 2], TmaxG_PA[, 2],
-  TQ1G_PA[, 2], TQ3G_PA[, 2],
-  check.names = FALSE
-)
-
 # Addiction payed amount to gender, product type and business discount
-DTest_new %>%
+data_collection %>%
   group_by(gender, product_type, business_discount) %>%
   summarise(payedAmount = mean(payed_amount)) %>%
   spread(gender, payedAmount)
 
-DTest_new %>%
+data_collection %>%
   group_by(gender, number_of_children) %>%
   summarise(delay = mean(delay)) %>%
   spread(gender, delay)
