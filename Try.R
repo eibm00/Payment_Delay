@@ -6,7 +6,7 @@ if (!require(tidyverse)) install.packages("tidyverse")
 if (!require(naniar)) install.packages("naniar")
 if (!require(styler)) install.packages("styler")
 if (!require(GGally)) install.packages("GGally")
-if(!require(skimr)) install.packages("skimr")
+if (!require(skimr)) install.packages("skimr")
 
 library(tidyverse)
 library(naniar)
@@ -27,9 +27,6 @@ data_collection <- read.csv(path_to_data)
 ### Data understanding ---------------------------------------------------------
 
 # Data description -------------------------------------------------------------
-
-# Display the internal structure of the data
-str(data_collection)
 
 # Data volume (number of rows and columns)
 nrow <- nrow(data_collection)
@@ -92,36 +89,59 @@ data_collection <- data_collection %>%
 # Display the internal structure of the data
 str(data_collection)
 
-
-# Analyze correlations among numerical features
-numerical_rel <- matrix(nrow = choose(ncol(data_collection), 2), ncol = 2)
+# Analyze correlations among numeric features
+corr_pairs_name <- matrix(nrow = choose(ncol(data_collection), 2), ncol = 3)
+numeric_rel <- matrix(nrow = choose(ncol(data_collection), 2), ncol = 2)
+corr_vector <- vector("integer")
 iteration <- 0
-for (i in c(1:(ncol(data_collection) - 1))) {
+for (i in c(9:(ncol(data_collection) - 1))) {
   if (is.numeric(data_collection[, i])) {
     for (j in c((i + 1):ncol(data_collection))) {
       iteration <- iteration + 1
       if (is.numeric(data_collection[, j])) {
-        correlation <- cor.test(data_collection[, i], data_collection[, j])
+        correlation <- cor.test(
+          x = data_collection[, i],
+          y = data_collection[, j]
+        )
         if (correlation$p.value <= 0.05) {
-          numerical_rel[iteration, ] <- c(i, j)
+          numeric_rel[iteration, ] <- c(i, j)
+          corr_pairs_name[iteration, 1] <- names(data_collection)[i]
+          corr_pairs_name[iteration, 2] <- names(data_collection)[j]
+          corr_pairs_name[iteration, 3] <- round(correlation$estimate, digits = 4)
+          corr_vector <- c(corr_vector, i, j)
         }
       }
     }
   }
 }
 
-numerical_rel <- as.data.frame(numerical_rel)
+# Save the pairs of numeric features that are correlated into a data frame
+corr_pairs_name <- as.data.frame(corr_pairs_name)
+corr_pairs_name <- corr_pairs_name %>%
+  filter_all(any_vars(!is.na(.)))
+numeric_rel <- as.data.frame(numeric_rel)
+numeric_rel <- numeric_rel %>%
+  filter_all(any_vars(!is.na(.)))
 
-pairs(numerical_rel[,], na.action = na.omit, pch = 20, lower.panel = NULL)
-
-feature_cor <- cor(data_collection[, c(10, 11, 16, 23:25)])
-ggpairs(data_collection, columns = c(10, 11, 16, 23:25), title = "Attribute correlations")
+# Create correlation plots and export them into PNG files
+corr_vector <- unique(corr_vector)
+par(mfrow = c(length(corr_vector), length(corr_vector)))
+for (i in 1:nrow(numeric_rel)) {
+  x <- data_collection[, numeric_rel[i, 1]]
+  y <- data_collection[, numeric_rel[i, 2]]
+  g <- ggplot(data_collection, aes(x, y)) +
+    geom_point(size = 1) +
+    xlab(names(data_collection)[numeric_rel[i, 1]]) +
+    ylab(names(data_collection)[numeric_rel[i, 2]])
+  ggsave(filename = paste0("correlation_", i, ".png"), g, width = 14, height = 10, units = "cm")
+}
 
 # Examine relationship between categorical features using chi-squared test with
 #   the significance level 0.05
 # Overestimating the matrix size saves time compared to building the matrix one
 #  row at a time:
 categorical_rel <- matrix(nrow = choose(ncol(data_collection), 2), ncol = 2)
+cont_vector <- vector("integer")
 iteration <- 0
 for (i in c(1:(ncol(data_collection) - 1))) {
   if (is.factor(data_collection[, i])) {
@@ -132,18 +152,21 @@ for (i in c(1:(ncol(data_collection) - 1))) {
         chisq <- (chisq.test(contingency_table, correct = FALSE))
         if (chisq$p.value <= 0.05) {
           categorical_rel[iteration, ] <- c(i, j)
+          cont_vector <- c(cont_vector, i, j)
         }
       }
     }
   }
 }
 
+# Save the pairs of categorical features that are correlated into a data frame
 categorical_rel <- as.data.frame(categorical_rel)
+categorical_rel <- categorical_rel %>%
+  filter_all(any_vars(!is.na(.)))
 
+cont_vector <- unique(cont_vector)
 
-plot(data_collection$payment_order, data_collection$delay)
-abline(lm(data_collection$delay ~ data_collection$payment_order))
-
+# Suggestions
 data_collection %>%
   group_by(product_type) %>%
   summarize(
@@ -168,10 +191,10 @@ ggplot(data_collection, aes(x = payed_amount)) +
   )
 
 
-
 # Data exploration--------------------------------------------------------------
 
-# Analyze properties of interesting attributes in detail include graphs and plots
+# Analyze properties of interesting attributes in detail include graphs and 
+#   plots
 
 # Summary statistics of the data
 # Check attribute value ranges, coverage, NAs occurence
@@ -202,11 +225,11 @@ data_collection %>%
 
 # Check for plausibility of values
 # Check for plausibility of values
-for (i in c(1:ncol)){
-  if(is.factor(data_collection[,i])){
+for (i in c(1:ncol)) {
+  if (is.factor(data_collection[, i])) {
     print(colnames(data_collection[i]))
-    print(prop.table(table(data_collection[,i])))
-    cat(sep="\n\n")
+    print(prop.table(table(data_collection[, i])))
+    cat(sep = "\n\n")
   }
 }
 
@@ -235,7 +258,7 @@ ggplot(data = data_collection, aes(x = marital_status)) +
   theme(axis.text.x = element_text(angle = 0, hjust = 1))
 table(data_collection$marital_status)
 
-# mostly 0 children, drops with number 
+# mostly 0 children, drops with number
 prop.table(table(data_collection$number_of_children))
 
 #  mostly 1 other product, drops with number
@@ -247,7 +270,7 @@ ggplot(data = data_collection, aes(x = client_email)) +
   theme(axis.text.x = element_text(angle = 0, hjust = 1))
 table(data_collection$client_email)
 
-# total earning level mostly not declared  
+# total earning level mostly not declared
 ggplot(data = data_collection, aes(x = total_earnings)) +
   geom_bar() +
   theme(axis.text.x = element_text(angle = 0, hjust = 1))

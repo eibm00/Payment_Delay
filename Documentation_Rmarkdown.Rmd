@@ -1,0 +1,84 @@
+---
+title: "Documentation"
+author: "Ivana Stanova"
+date: "19 11 2020"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+  pdf_document:
+    keep_tex: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Understanding
+### Data Description Report
+
+The initial data was provided in a comma-separated values file, and was loaded and processed using the R programming language. Dataset used in this analysis contains 2 353 012 observations and 24 variables.
+
+|Column name|Description|Type|Values|
+|-----------|-----------|-----------|
+|contract_id|Unique identificator of the contract|Int|{1,2,3,…,N}|
+|payment_order|Order of the payment|Int|{1,2,3,…}|
+|due_date|Payment deadline|Date|YY/MM/DD|
+|payment_date|Date of the payment|Date|YY/MM/DD|
+|product_type|Type of the product|Factor|{1,2,3,4,5}|
+|contract_status||||
+|business_discount|Business discount provided|Factor|{0,1}|
+|gender|Gender|Factor|{1,2}|
+|marital_status|Marital status|Factor|{1,2,3,4,5,6}|
+|number_of_children|Number of children|Int|{1,2,3,…}|
+|number_other_product|Number of other products|Int|{1,2,3,…}|
+|clients_phone|T/F if the client filled in home phone|Factor|{True, False}|
+|client_mobile|T/F if the client filled in mobile phone|Factor|{True, False}|
+|client_email|T/F if the client filled in email address|Factor|{True, False}|
+|total_earnings|Earning bucket|Factor|{level1,…, not_declared}|
+|birth_year|Birth year of the client|Int|{1990,1991,...}|
+|birth_month|Birth month of the client|Int|{1,2,3,…}|
+|living_area|Region of the client home address|Factor|{1,2,3,…}|
+|different_contact_area|T/F if the client filled different home and contact address|Factor|{True, False}|
+|kc_flag|T/F if the client does not home local citizenship|Factor|{True, False}|
+|cf_val|If the special measure during the underwriting was applied|||
+|kzmz_flag|T/F if the client filled in employer|Factor|{True, False}|
+|due_amount|Installment what should be payed|Numeric|(0,…)|
+|payed_amount|What was payed at a certain date|Numeric|(0,…)|
+
+#### Value ranges
+
+#### Attribute correlations
+We tested for correlation between paired numeric samples using Pearson's product moment correlation coefficient and found the following pairs of attributes to be correlated:
+
+
+```{r correlations}
+knitr::kable(corr_pairs_name, caption = "Pairs of correlated attributes", col.names = c("Attribute 1","Attribute 2","Correlation coefficient"))
+```
+
+#### Basic statistics
+
+```{r statistics}
+summary(data_collection[c(1:24)])
+```
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Data Exploration Report
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Data Quality Report
