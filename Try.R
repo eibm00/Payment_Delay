@@ -548,6 +548,83 @@ data_collection <- data_collection %>%
   unnest(c(data, delay_indiv_21, delay_indiv_140))
 
 
+data_collection <- data_collection %>%
+  mutate(mean_delay_12m = rep(NA, nrow(data_collection))) %>% 
+  mutate(mean_delay_12m_help = rep(NA, nrow(data_collection))) %>%
+  mutate(mean_delay_6m = rep(NA, nrow(data_collection))) %>% 
+  mutate(mean_delay_6m_help = rep(NA, nrow(data_collection))) %>%
+  mutate(mean_delay_3m = rep(NA, nrow(data_collection))) %>% 
+  mutate(mean_delay_3m_help = rep(NA, nrow(data_collection))) %>%
+  mutate(mean_delay_1m = rep(NA, nrow(data_collection))) %>% 
+  mutate(mean_delay_1m_help = rep(NA, nrow(data_collection))) %>%
+  filter(is.na(payment_order) == F) %>% # POZOR, OVERIT!!!!!!!! 
+  filter(is.na(delay) == F) # POZOR, OVERIT!!!!!!!!
+
+
+nested_data <- data_collection %>%
+  nest(-contract_id) 
+
+for(i in 1:nrow(nested_data)){
+  df_actual <- nested_data$data[[i]]
+  for(j in 1:nrow(df_actual)){
+    
+    # Prumer za poslednich 12 M
+    if(j > 12){
+    # Identifikuje zaznamy, ze kterych se bude pocitat prumer 
+    df_actual <- df_actual %>%
+      mutate(mean_delay_12m_help = ifelse(due_date >= df_actual$due_date[j] - months(12) &
+                                            due_date < df_actual$due_date[j], 1, 0))
+    
+    # Vypocita prumer
+    df_actual$mean_delay_12m[j] <-sum(df_actual$mean_delay_12m_help*df_actual$delay)/sum(df_actual$mean_delay_12m_help) 
+    # Vycisti pomocny sloupec
+    df_actual$mean_delay_12m_help = rep(NA, nrow(df_actual))
+    }
+    
+    # Prumer za poslednich 6 M
+    if(j > 6){
+      # Identifikuje zaznamy, ze kterych se bude pocitat prumer 
+      df_actual <- df_actual %>%
+        mutate(mean_delay_6m_help = ifelse(due_date >= df_actual$due_date[j] - months(6) &
+                                              due_date < df_actual$due_date[j], 1, 0))
+      
+      # Vypocita prumer
+      df_actual$mean_delay_6m[j] <-sum(df_actual$mean_delay_6m_help*df_actual$delay)/sum(df_actual$mean_delay_6m_help) 
+      # Vycisti pomocny sloupec
+      df_actual$mean_delay_6m_help = rep(NA, nrow(df_actual))
+    }
+    
+    # Prumer za posledni 3 M
+    if(j > 3){
+      # Identifikuje zaznamy, ze kterych se bude pocitat prumer 
+      df_actual <- df_actual %>%
+        mutate(mean_delay_3m_help = ifelse(due_date >= df_actual$due_date[j] - months(3) &
+                                             due_date < df_actual$due_date[j], 1, 0))
+      
+      # Vypocita prumer
+      df_actual$mean_delay_3m[j] <-sum(df_actual$mean_delay_3m_help*df_actual$delay)/sum(df_actual$mean_delay_3m_help) 
+      # Vycisti pomocny sloupec
+      df_actual$mean_delay_3m_help = rep(NA, nrow(df_actual))
+    }
+    
+    # Prumer za posledni 1 M
+    if(j > 1){
+      # Identifikuje zaznamy, ze kterych se bude pocitat prumer 
+      df_actual <- df_actual %>%
+        mutate(mean_delay_1m_help = ifelse(due_date >= df_actual$due_date[j] - months(1) &
+                                             due_date < df_actual$due_date[j], 1, 0))
+      
+      # Vypocita prumer
+      df_actual$mean_delay_1m[j] <-sum(df_actual$mean_delay_1m_help*df_actual$delay)/sum(df_actual$mean_delay_1m_help) 
+      # Vycisti pomocny sloupec
+      df_actual$mean_delay_1m_help = rep(NA, nrow(df_actual))
+    }
+    
+  }
+  nested_data$data[[i]] <- df_actual 
+  
+  print(i)
+}
 
 
 
