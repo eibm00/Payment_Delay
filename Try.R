@@ -514,10 +514,10 @@ data_collection %>%
 
 # This function takes a vector and shifts its values by 1. This means that 
 # on the second position is the first value, on the third position is 
-# the second value etc. This is necessary for following feature engineering. 
+# the second value etc. This is necessary for feature engineering. 
 # We want a cumulative sum/cumulative mean for previous payments, but 
 # functions cummean/cumsum applied to a row[i] make the calculations
-# using also the number on this line. This is where this function comes handy.
+# using also the number on this line. This is where this function comes in handy.
 f_vec_shift <- function(x){
   new_vec <- c(0, x[1:length(x)-1])
   return(new_vec)
@@ -547,7 +547,16 @@ data_collection <- data_collection %>%
     select(-delay_indiv_21_help, -delay_indiv_140_help) %>%
   unnest(c(data, delay_indiv_21, delay_indiv_140))
 
+# This part of the feature engineering process is the longest, but the syntax
+# is not that complicated (compared to map/nest etc.).
+# It works like this: 
+# First, we create new features (variables, columns) for storing 
+# the average payment delay for last 12/6/3/1 month.
+# In this section, I am also creating a set of new features with suffix _help, 
+# they serve only as a temporary helper. 
 
+# It was necessasry rep() NA values, since 0 or any other number
+# would be misleading. 
 data_collection <- data_collection %>%
   mutate(mean_delay_12m = rep(NA, nrow(data_collection))) %>% 
   mutate(mean_delay_12m_help = rep(NA, nrow(data_collection))) %>%
@@ -560,73 +569,98 @@ data_collection <- data_collection %>%
   filter(is.na(payment_order) == F) %>% # POZOR, OVERIT!!!!!!!! 
   filter(is.na(delay) == F) # POZOR, OVERIT!!!!!!!!
 
-
-nested_data <- data_collection %>%
+# Second we nest data again
+data_collection <- data_collection %>%
   nest(-contract_id) 
 
-for(i in 1:nrow(nested_data)){
-  df_actual <- nested_data$data[[i]]
+# And third, we loop through the data. A lot. 
+# The first loop loops through the nested data for each contract. 
+# The purpose of this main loop is similar to map() function. 
+# Maybe the inner loop could be written as a function and passed to
+# map() in .f argument, but not sure how big the runtime gains would be. 
+for(i in 1:nrow(data_collection)){
+  df_actual <- data_collection$data[[i]]
+  
+  # The second loop loops through the dataframe for each contract. 
+  # There are 4 if conditions in this for loop -> 12/6/3/1 M delay.
+  # The logic is this: 
+  # The algorithm identifies rows with due_date in the given date range, which
+  # means last 12/6/3/1 months. These rows are marked with 1 in the _help column. 
+  # Then, the average is calculated simply by multiplying delay column by 
+  # _help column and divided by the sum of _help. This works because the 
+  # _help column has only zeroes and ones. 
+  # Lastly, the _help columned is restarted for the next round. 
   for(j in 1:nrow(df_actual)){
     
-    # Prumer za poslednich 12 M
+    # Mean for the last 12 months
     if(j > 12){
-    # Identifikuje zaznamy, ze kterych se bude pocitat prumer 
+    # Mark relevant rows with 1
     df_actual <- df_actual %>%
       mutate(mean_delay_12m_help = ifelse(due_date >= df_actual$due_date[j] - months(12) &
                                             due_date < df_actual$due_date[j], 1, 0))
     
-    # Vypocita prumer
+    # Calculate mean
     df_actual$mean_delay_12m[j] <-sum(df_actual$mean_delay_12m_help*df_actual$delay)/sum(df_actual$mean_delay_12m_help) 
-    # Vycisti pomocny sloupec
+    # Restart helper column
     df_actual$mean_delay_12m_help = rep(NA, nrow(df_actual))
     }
     
-    # Prumer za poslednich 6 M
+    # Mean for the last 6 months
     if(j > 6){
-      # Identifikuje zaznamy, ze kterych se bude pocitat prumer 
+      # Mark relevant rows with 1 
       df_actual <- df_actual %>%
         mutate(mean_delay_6m_help = ifelse(due_date >= df_actual$due_date[j] - months(6) &
                                               due_date < df_actual$due_date[j], 1, 0))
       
-      # Vypocita prumer
+      # Calculate mean
       df_actual$mean_delay_6m[j] <-sum(df_actual$mean_delay_6m_help*df_actual$delay)/sum(df_actual$mean_delay_6m_help) 
-      # Vycisti pomocny sloupec
+      # Restart helper column
       df_actual$mean_delay_6m_help = rep(NA, nrow(df_actual))
     }
     
-    # Prumer za posledni 3 M
+    # Mean for the last 3 months
     if(j > 3){
-      # Identifikuje zaznamy, ze kterych se bude pocitat prumer 
+      # Mark relevant rows with 1 
       df_actual <- df_actual %>%
         mutate(mean_delay_3m_help = ifelse(due_date >= df_actual$due_date[j] - months(3) &
                                              due_date < df_actual$due_date[j], 1, 0))
       
-      # Vypocita prumer
+      # Calculate mean
       df_actual$mean_delay_3m[j] <-sum(df_actual$mean_delay_3m_help*df_actual$delay)/sum(df_actual$mean_delay_3m_help) 
-      # Vycisti pomocny sloupec
+      # Restart helper column
       df_actual$mean_delay_3m_help = rep(NA, nrow(df_actual))
     }
     
-    # Prumer za posledni 1 M
+    # Mean for the last 1 month
     if(j > 1){
-      # Identifikuje zaznamy, ze kterych se bude pocitat prumer 
+      # Mark relevant rows with 1
       df_actual <- df_actual %>%
         mutate(mean_delay_1m_help = ifelse(due_date >= df_actual$due_date[j] - months(1) &
                                              due_date < df_actual$due_date[j], 1, 0))
       
-      # Vypocita prumer
+      # Calculate mean
       df_actual$mean_delay_1m[j] <-sum(df_actual$mean_delay_1m_help*df_actual$delay)/sum(df_actual$mean_delay_1m_help) 
-      # Vycisti pomocny sloupec
+      # Restart helper column
       df_actual$mean_delay_1m_help = rep(NA, nrow(df_actual))
     }
     
   }
-  nested_data$data[[i]] <- df_actual 
+  data_collection$data[[i]] <- df_actual 
   
+  # Progress bar might be more elegant, someone can add later 
+  # There is 86 980 observations to loop through, so printing [i] gives a good idea of progress. 
   print(i)
 }
 
+# Unnest the data
+# Remove helper columns
+data_collection <- data_collection %>%
+  unnest(-data) %>%
+    select(-mean_delay_12m_help, -mean_delay_6m_help, -mean_delay_3m_help, -mean_delay_1m_help)
 
+
+# Write data to .txt for the model creation
+write.table(data_collection, file = "data_collection_prepared.txt", sep = ";")
 
 
 
