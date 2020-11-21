@@ -221,6 +221,15 @@ data_collection %>%
 # what with NAs in payment order
 # to do payment order id!!
 
+sum(is.na(data_collection$different_contact_area) == T &
+      is.na(data_collection$cf_val) == T &
+      is.na(data_collection$living_area) == T & 
+      is.na(data_collection$kc_flag) == T)
+
+sum(is.na(data_collection$kc_flag) == T)
+
+# Zaver: ze ctyr promennych s nejvice NA zaznamy je vetsina NA pozorovani
+# na stejnych radcich, to muze indikovat "missing not at random".
 
 
 # Check for plausibility of values
@@ -500,6 +509,43 @@ data_collection %>%
   summarise(delay = mean(delay)) %>%
   spread(gender, delay)
 
+
+#### FEATURE ENGINEERING ------------------------------------------------------ 
+
+# This function takes a vector and shifts its values by 1. This means that 
+# on the second position is the first value, on the third position is 
+# the second value etc. This is necessary for following feature engineering. 
+# We want a cumulative sum/cumulative mean for previous payments, but 
+# functions cummean/cumsum applied to a row[i] make the calculations
+# using also the number on this line. This is where this function comes handy.
+f_vec_shift <- function(x){
+  new_vec <- c(0, x[1:length(x)-1])
+  return(new_vec)
+}
+
+# Creating new features: was the delay larger than 21(140) days? 
+data_collection <- data_collection %>%
+  mutate(delay_21_y = ifelse(delay > 21, 1, 0)) %>%
+  mutate(delay_140_y = ifelse(delay > 140, 1, 0))
+
+# Creating new features: mean delay for the whole client's history
+data_collection <- data_collection %>%
+  nest(-contract_id) %>%
+      mutate(delay_indiv_help = map(.x = data, .f = ~cummean(.x$delay))) %>%
+      mutate(delay_indiv = map(.x = delay_indiv_help, .f = ~f_vec_shift(.x))) %>%
+    select(-delay_indiv_help) %>%
+  unnest(c(data, delay_indiv))
+
+# Creating new features: number of delays larger than 21(140) days
+# for the whole client's history. 
+data_collection <- data_collection %>%
+  nest(-contract_id) %>%
+    mutate(delay_indiv_21_help = map(.x = data, .f = ~cumsum(.x$delay_21_y))) %>%
+      mutate(delay_indiv_21 = map(.x = delay_indiv_21_help, .f = ~f_vec_shift(.x))) %>%
+    mutate(delay_indiv_140_help = map(.x = data, .f = ~cumsum(.x$delay_140_y))) %>%
+      mutate(delay_indiv_140 = map(.x = delay_indiv_140_help, .f = ~f_vec_shift(.x))) %>%
+    select(-delay_indiv_21_help, -delay_indiv_140_help) %>%
+  unnest(c(data, delay_indiv_21, delay_indiv_140))
 
 
 
